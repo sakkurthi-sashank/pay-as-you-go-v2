@@ -13,6 +13,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { SidebarOptInForm } from "./sidebar-opt-in-form";
+import { NavUser } from "./nav-user";
+import { useSession } from "next-auth/react";
 
 const items = [
   {
@@ -33,6 +35,8 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const { data } = useSession();
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -74,6 +78,11 @@ export function AppSidebar() {
         <div className="p-1">
           <SidebarOptInForm />
         </div>
+        <NavUser
+          email={data?.user.email}
+          image={data?.user.image}
+          name={data?.user.name}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
