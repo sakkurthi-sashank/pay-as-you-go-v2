@@ -6,6 +6,7 @@ export const env = createEnv({
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
    */
+
   server: {
     AUTH_SECRET:
       process.env.NODE_ENV === "production"
@@ -26,6 +27,10 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_STORAGE_CONTAINER_NAME: z.string(),
+    NEXT_PUBLIC_STORAGE_ACCOUNT_NAME: z.string(),
+    NEXT_PUBLIC_ACCOUNT_KEY: z.string(),
+    NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN: z.string(),
   },
 
   /**
@@ -38,6 +43,13 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_STORAGE_CONTAINER_NAME:
+      process.env.NEXT_PUBLIC_STORAGE_CONTAINER_NAME,
+    NEXT_PUBLIC_STORAGE_ACCOUNT_NAME:
+      process.env.NEXT_PUBLIC_STORAGE_ACCOUNT_NAME,
+    NEXT_PUBLIC_ACCOUNT_KEY: process.env.NEXT_PUBLIC_ACCOUNT_KEY,
+    NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN:
+      process.env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
