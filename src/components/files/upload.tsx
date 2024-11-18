@@ -162,14 +162,12 @@ export default function ImageUpload() {
     }
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-misused-promises
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   return (
     <div>
       <div>
         <label
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
           {...getRootProps()}
           className="relative flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-6 hover:bg-gray-100"
         >
@@ -188,7 +186,6 @@ export default function ImageUpload() {
         </label>
 
         <Input
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
           {...getInputProps()}
           id="dropzone-file"
           accept="image/*,audio/*,video/*,.pdf"
