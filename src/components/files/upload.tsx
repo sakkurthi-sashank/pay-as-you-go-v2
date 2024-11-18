@@ -59,6 +59,14 @@ export default function ImageUpload() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [filesToUpload, setFilesToUpload] = useState<FileUploadProgress[]>([]);
 
+  const blobServiceClient = new BlobServiceClient(
+    `https://${env.NEXT_PUBLIC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/?${env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN}`,
+  );
+
+  const containerClient = blobServiceClient.getContainerClient(
+    env.NEXT_PUBLIC_STORAGE_CONTAINER_NAME,
+  );
+
   const getFileIconAndColor = (file: File) => {
     if (file.type.includes(FileTypes.Image)) {
       return {
@@ -95,6 +103,11 @@ export default function ImageUpload() {
   };
 
   const removeFile = (file: File) => {
+    blobServiceClient
+      .getContainerClient(env.NEXT_PUBLIC_STORAGE_CONTAINER_NAME)
+      .getBlockBlobClient(file.name)
+      .delete();
+
     setFilesToUpload((prevUploadProgress) => {
       return prevUploadProgress.filter((item) => item.File !== file);
     });
@@ -114,14 +127,6 @@ export default function ImageUpload() {
     ]);
 
     const fileUploadBatch = acceptedFiles.map(async (file) => {
-      const blobServiceClient = new BlobServiceClient(
-        `https://${env.NEXT_PUBLIC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/?${env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN}`,
-      );
-
-      const containerClient = blobServiceClient.getContainerClient(
-        env.NEXT_PUBLIC_STORAGE_CONTAINER_NAME,
-      );
-
       const blockBlobClient = containerClient.getBlockBlobClient(file.name);
 
       let lastProgress = 0;
