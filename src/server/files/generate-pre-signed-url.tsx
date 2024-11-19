@@ -37,7 +37,7 @@ export const generateTemporaryBlobLink = async (
       permissions,
       expiresOn,
       protocol: SASProtocol.Https,
-      contentDisposition: `inline; filename="${encodeURIComponent(fileName)}"`,
+      // contentDisposition: `inline; filename="${encodeURIComponent(fileName)}"`,
     },
     sharedKeyCredential,
   ).toString();

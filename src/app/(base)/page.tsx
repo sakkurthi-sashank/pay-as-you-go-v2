@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { MoveRight } from "lucide-react";
 import Link from "next/link";
-import ImageUpload from "@/components/files/upload";
+import BlobUpload from "@/components/files/blob-upload";
+import ImageGallery from "../_components/image-gallary";
 
 export default async function Home() {
   return (
@@ -32,10 +33,11 @@ export default async function Home() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <ImageUpload />
+            <BlobUpload />
           </div>
         </DialogContent>
       </Dialog>
+      <ImageGallery />
     </HydrateClient>
   );
 }

@@ -16,6 +16,9 @@ import { ProgressBar } from "../ui/progress";
 import { ScrollArea } from "../ui/scroll-area";
 import { BlobServiceClient } from "@azure/storage-blob";
 import { env } from "@/env";
+import { api } from "@/trpc/react";
+import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/hooks/use-toast";
 
 interface FileUploadProgress {
   progress: number;
@@ -55,9 +58,21 @@ const OtherColor = {
   fillColor: "fill-gray-400",
 };
 
-export default function ImageUpload() {
+export default function BlobUpload() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [filesToUpload, setFilesToUpload] = useState<FileUploadProgress[]>([]);
+
+  const { toast } = useToast();
+
+  const createFileEntry = api.files.createFileEntry.useMutation({
+    onSuccess(data) {
+      toast({
+        title: "File uploaded",
+        description: `File ${data.fileName} uploaded successfully`,
+        variant: "default",
+      });
+    },
+  });
 
   const blobServiceClient = new BlobServiceClient(
     `https://${env.NEXT_PUBLIC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/?${env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN}`,
@@ -127,33 +142,36 @@ export default function ImageUpload() {
     ]);
 
     const fileUploadBatch = acceptedFiles.map(async (file) => {
-      const blockBlobClient = containerClient.getBlockBlobClient(file.name);
+      const id = uuidv4();
+      const blockBlobClient = containerClient.getBlockBlobClient(id);
 
       let lastProgress = 0;
 
-      const uploadOptions = {
-        onProgress: (progress: { loadedBytes: number }) => {
-          const currentProgress = Math.round(
-            (progress.loadedBytes / file.size) * 100,
-          );
-          if (currentProgress !== lastProgress) {
-            lastProgress = currentProgress;
-            setFilesToUpload((prev) =>
-              prev.map((fileProgress) =>
-                fileProgress.File === file
-                  ? {
-                      ...fileProgress,
-                      progress: currentProgress,
-                    }
-                  : fileProgress,
-              ),
-            );
-          }
-        },
-      };
-
       try {
-        await blockBlobClient.uploadData(file, uploadOptions);
+        await blockBlobClient.uploadData(file, {
+          onProgress: ({ loadedBytes }) => {
+            const currentProgress = Math.round((loadedBytes / file.size) * 100);
+            if (currentProgress !== lastProgress) {
+              lastProgress = currentProgress;
+              setFilesToUpload((prev) =>
+                prev.map((fileProgress) =>
+                  fileProgress.File === file
+                    ? {
+                        ...fileProgress,
+                        progress: currentProgress,
+                      }
+                    : fileProgress,
+                ),
+              );
+            }
+          },
+        });
+        createFileEntry.mutate({
+          id: id,
+          fileName: file.name,
+          fileSize: file.size.toString(),
+          mineType: file.type,
+        });
         setUploadedFiles((prevUploadedFiles) => [...prevUploadedFiles, file]);
       } catch (error) {
         console.error(`Error uploading ${file.name}: `, error);
@@ -165,7 +183,7 @@ export default function ImageUpload() {
     } catch (error) {
       console.error("Error uploading files: ", error);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 

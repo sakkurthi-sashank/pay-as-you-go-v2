@@ -121,7 +121,6 @@ export const storageFiles = createTable("storage_files", {
   fileSize: decimal("file_size", { precision: 20, scale: 2 }).notNull(),
   mimeType: varchar("mime_type", { length: 100 }).notNull(),
   isShared: boolean("is_shared").default(false).notNull(),
-  storagePath: varchar("storage_path", { length: 500 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),

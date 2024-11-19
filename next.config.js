@@ -8,6 +8,9 @@ import "./src/env.js";
 const config = {
   output: "standalone",
   productionBrowserSourceMaps: false,
+  images: {
+    domains: ["paydrive.blob.core.windows.net"],
+  },
 };
 
 export default config;
