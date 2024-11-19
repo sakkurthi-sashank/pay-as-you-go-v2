@@ -18,6 +18,7 @@ export const env = createEnv({
       .default("development"),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
+    RAZOR_PAY_KEY_SECRET: z.string(),
   },
 
   /**
@@ -31,6 +32,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STORAGE_ACCOUNT_NAME: z.string(),
     NEXT_PUBLIC_ACCOUNT_KEY: z.string(),
     NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN: z.string(),
+    NEXT_PUBLIC_RAZOR_PAY_KEY_ID: z.string(),
   },
 
   /**
@@ -50,6 +52,7 @@ export const env = createEnv({
     NEXT_PUBLIC_ACCOUNT_KEY: process.env.NEXT_PUBLIC_ACCOUNT_KEY,
     NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN:
       process.env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN,
+    NEXT_PUBLIC_RAZOR_PAY_KEY_ID: process.env.NEXT_PUBLIC_RAZOR_PAY_KEY_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

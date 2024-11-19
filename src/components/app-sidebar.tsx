@@ -1,4 +1,10 @@
-import { GalleryVerticalEnd, Home, Inbox, Settings } from "lucide-react";
+import {
+  CreditCard,
+  GalleryVerticalEnd,
+  Home,
+  Inbox,
+  Settings,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -32,6 +38,11 @@ const items = [
     title: "Settings",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Billing",
+    url: "/billing",
+    icon: CreditCard,
   },
 ];
 

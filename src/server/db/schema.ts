@@ -9,6 +9,7 @@ import {
   timestamp,
   varchar,
   decimal,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -36,6 +37,9 @@ export const users = createTable("user", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
+  storageFiles: many(storageFiles),
+  fileSharing: many(fileSharing),
+  billingEntries: many(billingOnstorageFiles),
 }));
 
 export const accounts = createTable(
@@ -129,6 +133,18 @@ export const storageFiles = createTable("storage_files", {
     .$onUpdate(() => new Date()),
 });
 
+export const storageFilesRelations = relations(
+  storageFiles,
+  ({ one, many }) => ({
+    owner: one(users, {
+      fields: [storageFiles.ownerId],
+      references: [users.id],
+    }),
+    fileSharing: many(fileSharing),
+    billingEntries: many(billingOnstorageFiles),
+  }),
+);
+
 export const fileSharing = createTable("file_sharing", {
   id: varchar("id", { length: 255 })
     .notNull()
@@ -145,3 +161,46 @@ export const fileSharing = createTable("file_sharing", {
     .notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 });
+
+export const fileSharingRelations = relations(fileSharing, ({ one }) => ({
+  file: one(storageFiles, {
+    fields: [fileSharing.fileId],
+    references: [storageFiles.id],
+  }),
+  sharedWith: one(users, {
+    fields: [fileSharing.sharedWithId],
+    references: [users.id],
+  }),
+}));
+
+const paymentStatus = pgEnum("payment_status", ["pending", "paid"]);
+
+export const billingOnstorageFiles = createTable("billing_on_storage_files", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  fileId: varchar("file_id", { length: 255 })
+    .notNull()
+    .references(() => storageFiles.id),
+  ownerId: varchar("owner_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  status: paymentStatus("status").notNull(),
+  amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const billingRelations = relations(billingOnstorageFiles, ({ one }) => ({
+  file: one(storageFiles, {
+    fields: [billingOnstorageFiles.fileId],
+    references: [storageFiles.id],
+  }),
+  owner: one(users, {
+    fields: [billingOnstorageFiles.ownerId],
+    references: [users.id],
+  }),
+}));
