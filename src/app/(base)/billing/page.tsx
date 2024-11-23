@@ -1,92 +1,84 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { env } from "@/env";
+import { useState } from "react";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { HardDrive, Shield, Zap, Clock } from "lucide-react";
 
-type BillingData = {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  mimeType: string;
-  isShared: boolean;
-  createdAt: string;
-  amount: number;
-  expiresAt: string | null;
-  paymentStatus: "paid" | "pending" | "overdue";
-};
-
-const fetchBillingData = async (): Promise<BillingData[]> => {
-  return [
-    {
-      id: "1",
-      fileName: "document.pdf",
-      fileSize: 1024000,
-      mimeType: "application/pdf",
-      isShared: false,
-      createdAt: "2023-06-01T12:00:00Z",
-      amount: 5.99,
-      expiresAt: "2023-07-01T12:00:00Z",
-      paymentStatus: "pending",
-    },
-    {
-      id: "2",
-      fileName: "image.jpg",
-      fileSize: 2048000,
-      mimeType: "image/jpeg",
-      isShared: true,
-      createdAt: "2023-06-02T14:30:00Z",
-      amount: 9.99,
-      expiresAt: null,
-      paymentStatus: "paid",
-    },
-    {
-      id: "3",
-      fileName: "video.mp4",
-      fileSize: 5120000,
-      mimeType: "video/mp4",
-      isShared: false,
-      createdAt: "2023-05-30T10:00:00Z",
-      amount: 14.99,
-      expiresAt: "2023-06-30T10:00:00Z",
-      paymentStatus: "overdue",
-    },
-  ];
-};
-
-export default function BillingPage() {
-  const [billingData, setBillingData] = useState<BillingData[]>([]);
-  const [orderId, setOrderId] = useState<string | null>(null);
+export default function StoragePurchasePage() {
+  const [storageSize, setStorageSize] = useState(15);
+  const pricePerGB = 2;
+  const totalPrice = storageSize * pricePerGB;
   const { data } = useSession();
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const order = api.payments.createOrder.useMutation({
     onSuccess(data) {
       setOrderId(data.id);
     },
   });
 
-  const handlePayment = (id: string) => {
+  const captureOrder = api.payments.captureOrder.useMutation({
+    onSuccess(data, variables, context) {
+      toast({
+        title: "Payment Successful",
+        description: "Your payment was successful",
+        variant: "default",
+      });
+    },
+    onError(error) {
+      toast({
+        title: "Payment Failed",
+        description: "Your payment failed",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSliderChange = (value: number[]) => {
+    setStorageSize(value[0]);
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(event.target.value);
+    if (!isNaN(value) && value >= 1 && value <= 1000) {
+      setStorageSize(value);
+    }
+  };
+
+  const handlePayment = () => {
     const options = {
       key: env.NEXT_PUBLIC_RAZOR_PAY_KEY_ID,
-      amount: 10,
+      amount: totalPrice * 100,
       currency: "INR",
       name: data?.user?.email?.split("@")[0],
       description: "Payment for your videos",
       image: "/favicon.ico",
       order_id: orderId,
-      handler: async function (response: any) {},
+      handler: async function (response: any) {
+        console.log(response);
+        const data = {
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_signature: response.razorpay_signature,
+          totalAmount: totalPrice,
+          storageSize: storageSize,
+        };
+        captureOrder.mutate(data);
+      },
       prefill: {
         name: data?.user?.email?.split("@")[0],
         email: data?.user?.email,
@@ -104,91 +96,152 @@ export default function BillingPage() {
     paymentObject.open();
   };
 
-  useEffect(() => {
-    const loadBillingData = async () => {
-      const data = await fetchBillingData();
-      setBillingData(data);
-    };
-    loadBillingData();
-  }, []);
-
-  const formatFileSize = (bytes: number) => {
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    if (bytes === 0) return "0 Byte";
-    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const getPaymentStatusBadge = (status: BillingData["paymentStatus"]) => {
-    switch (status) {
-      case "paid":
-        return <Badge className="bg-green-500">Paid</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-500">Pending</Badge>;
-      case "overdue":
-        return <Badge className="bg-red-500">Overdue</Badge>;
-    }
-  };
-
   return (
-    <div className="mt-10 flex w-full justify-center">
-      <Card className="max-w-6xl">
-        <CardHeader>
-          <CardTitle>Billing Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableCaption>
-              A list of your recent bills for stored files.
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>File Name</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Shared</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {billingData.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.fileName}</TableCell>
-                  <TableCell>{formatFileSize(item.fileSize)}</TableCell>
-                  <TableCell>{item.mimeType}</TableCell>
-                  <TableCell>{item.isShared ? "Yes" : "No"}</TableCell>
-                  <TableCell>{formatDate(item.createdAt)}</TableCell>
-                  <TableCell>${item.amount.toFixed(2)}</TableCell>
-                  <TableCell>{formatDate(item.expiresAt)}</TableCell>
-                  <TableCell>
-                    {getPaymentStatusBadge(item.paymentStatus)}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      onClick={() => {
-                        order.mutate({ amount: 10 });
-                        handlePayment(item.id);
-                      }}
-                      disabled={item.paymentStatus === "paid"}
-                    >
-                      {item.paymentStatus === "paid" ? "Paid" : "Pay"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <div className="m-3 min-h-screen rounded-lg bg-gray-50 p-6">
+      <div className="mx-auto">
+        <div className="mb-12">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900">
+            Expand Your Storage Space
+          </h1>
+          <p className="text-lg text-gray-600">
+            Get the storage you need with our flexible pricing plans
+          </p>
+        </div>
+
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <Card className="w-full max-w-xl">
+            <CardHeader>
+              <CardTitle className="text-center text-3xl font-bold text-blue-600">
+                Flexible Storage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="text-center">
+                <p className="text-lg text-gray-600">
+                  Choose any amount from 1GB to 1000GB to match your needs
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="w-full max-w-xl">
+            <CardHeader>
+              <CardTitle className="text-center text-3xl font-bold text-blue-600">
+                Secure Storage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="text-center">
+                <p className="text-lg text-gray-600">
+                  Your data is protected with enterprise-grade security
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="w-full max-w-xl">
+            <CardHeader>
+              <CardTitle className="text-center text-3xl font-bold text-blue-600">
+                High Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="text-center">
+                <p className="text-lg text-gray-600">
+                  Fast upload and download speeds for all your files
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-center">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-center text-3xl font-bold">
+                Select Your Storage Plan
+              </CardTitle>
+              <p className="text-center text-gray-600">
+                ₹{pricePerGB}/GB per month
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="text-center">
+                <span className="text-6xl font-bold text-blue-600">
+                  ₹{totalPrice}
+                </span>
+                <span className="text-xl text-gray-600">/month</span>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Storage Amount</span>
+                    <span className="text-sm text-gray-600">
+                      {storageSize} GB
+                    </span>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={1000}
+                    step={1}
+                    value={[storageSize]}
+                    onValueChange={handleSliderChange}
+                    className="py-4"
+                  />
+                </div>
+
+                <div className="flex w-full items-center space-x-2">
+                  <Input
+                    type="number"
+                    value={storageSize}
+                    onChange={handleInputChange}
+                    min={1}
+                    max={1000}
+                    className="text-center"
+                  />
+                  <span className="text-gray-600">GB</span>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-lg bg-gray-50 p-4">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  <span className="text-sm text-gray-600">
+                    Instant activation after payment
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  <span className="text-sm text-gray-600">
+                    Secure payment processing
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button
+                className="w-full bg-blue-600 py-6 text-lg font-semibold hover:bg-blue-700"
+                onClick={() => {
+                  order.mutate({
+                    amount: Number(totalPrice),
+                  });
+                  handlePayment();
+                }}
+              >
+                Purchase {storageSize}GB for ₹{totalPrice}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <div className="mt-16 text-center">
+          <p className="text-sm text-gray-500">
+            Need help choosing the right storage plan? Contact our support team
+            24/7
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

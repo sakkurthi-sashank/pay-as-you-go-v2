@@ -53,6 +53,7 @@ export const env = createEnv({
     NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN:
       process.env.NEXT_PUBLIC_AZURE_STORAGE_SAS_TOKEN,
     NEXT_PUBLIC_RAZOR_PAY_KEY_ID: process.env.NEXT_PUBLIC_RAZOR_PAY_KEY_ID,
+    RAZOR_PAY_KEY_SECRET: process.env.RAZOR_PAY_KEY_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
