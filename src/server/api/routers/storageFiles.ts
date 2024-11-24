@@ -49,12 +49,6 @@ export const storageFilesRouter = createTRPCRouter({
       .where(eq(storageFiles.ownerId, ctx.session.user.id))
       .execute();
 
-    const urlsIncludedBlob = [];
-    for (const blob of blobs) {
-      const url = await generateTemporaryBlobLink(blob.id, blob.fileName);
-      urlsIncludedBlob.push({ ...blob, url });
-    }
-
-    return urlsIncludedBlob;
+    return blobs;
   }),
 });

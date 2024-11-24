@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
+import { generateTemporaryBlobLink } from "@/server/files/generate-pre-signed-url";
 
 export default function ImageGallery() {
   const [selectedImage, setSelectedImage] = useState<{
@@ -28,11 +29,12 @@ export default function ImageGallery() {
         {images.map((image) => (
           <div key={image.id} className="group relative">
             <Image
-              src={image.url}
+              src={"/image.png"}
               alt={`Image ${image.id}`}
-              width={300}
-              height={200}
-              className="h-auto w-full rounded-lg object-cover"
+              width={400}
+              height={300}
+              className="h-auto w-full rounded-lg"
+              style={{ aspectRatio: "400/300", objectFit: "cover" }}
             />
             <Dialog>
               <DialogTrigger asChild>
@@ -40,7 +42,13 @@ export default function ImageGallery() {
                   variant="outline"
                   size="icon"
                   className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => setSelectedImage(image)}
+                  onClick={async () => {
+                    const url = await generateTemporaryBlobLink(
+                      image.id,
+                      image.fileName,
+                    );
+                    setSelectedImage({ ...image, url });
+                  }}
                 >
                   <Info className="h-4 w-4" />
                   <span className="sr-only">Image info</span>
@@ -50,6 +58,16 @@ export default function ImageGallery() {
                 <DialogHeader>
                   <DialogTitle>Image Information</DialogTitle>
                 </DialogHeader>
+                <picture>
+                  <img
+                    src={selectedImage?.url ?? "/image.png"}
+                    alt={`Image ${image.id}`}
+                    width={400}
+                    height={300}
+                    className="h-auto w-full rounded-lg"
+                    style={{ aspectRatio: "400/300", objectFit: "cover" }}
+                  />
+                </picture>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <span className="font-medium">ID:</span>

@@ -5,9 +5,9 @@ import { sum } from "drizzle-orm";
 
 export const purchaseRouter = createTRPCRouter({
   avaliableStorage: protectedProcedure.query(async ({ ctx }) => {
-    const data = await ctx.db
+    const avaliableStorageFromPurchase = await ctx.db
       .select({
-        sum: sum(storageUserPurchase.storageSize),
+        sum: sql<number>`CAST(COALESCE(${sum(storageUserPurchase.storageSize)}, 0) AS float)`,
       })
       .from(storageUserPurchase)
       .where(
@@ -18,8 +18,28 @@ export const purchaseRouter = createTRPCRouter({
       )
       .execute();
 
-    console.log(data[0]);
+    const usedStorage = await ctx.db
+      .select({
+        sum: sql<number>`CAST(COALESCE(${sum(storageFiles.fileSize)}, 0) AS float)`,
+      })
+      .from(storageFiles)
+      .where(eq(storageFiles.ownerId, ctx.session.user.id))
+      .execute();
 
-    return data[0];
+    const BYTES_TO_GB = 1024 * 1024 * 1024;
+
+    const purchasedStorageNum = Number(
+      avaliableStorageFromPurchase[0]?.sum ?? 0,
+    );
+    const usedStorageNum = Number(usedStorage[0]?.sum ?? 0) / BYTES_TO_GB;
+    const availableStorageNum = purchasedStorageNum - usedStorageNum;
+
+    return {
+      totalPurchasedStorage: purchasedStorageNum.toFixed(4),
+      totalUsedStorage: usedStorageNum.toFixed(4),
+      availableStorage: availableStorageNum.toFixed(4),
+      isStorageFull: availableStorageNum <= 0,
+      usedStorageBytes: usedStorage[0]?.sum ?? 0,
+    };
   }),
 });
