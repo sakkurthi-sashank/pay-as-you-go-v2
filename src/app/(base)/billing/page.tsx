@@ -22,14 +22,10 @@ export default function StoragePurchasePage() {
   const pricePerGB = 2;
   const totalPrice = storageSize * pricePerGB;
   const { data } = useSession();
-  const [orderId, setOrderId] = useState<string | null>(null);
+
   const { toast } = useToast();
 
-  const order = api.payments.createOrder.useMutation({
-    onSuccess(data) {
-      setOrderId(data.id);
-    },
-  });
+  const order = api.payments.createOrder.useMutation();
 
   const captureOrder = api.payments.captureOrder.useMutation({
     onSuccess(data, variables, context) {
@@ -59,7 +55,11 @@ export default function StoragePurchasePage() {
     }
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    const newOrder = await order.mutateAsync({
+      amount: Number(totalPrice),
+    });
+
     const options = {
       key: env.NEXT_PUBLIC_RAZOR_PAY_KEY_ID,
       amount: totalPrice * 100,
@@ -67,17 +67,16 @@ export default function StoragePurchasePage() {
       name: data?.user?.email?.split("@")[0],
       description: "Payment for your videos",
       image: "/favicon.ico",
-      order_id: orderId,
+      order_id: newOrder.id,
       handler: async function (response: any) {
-        console.log(response);
-        const data = {
+        const paymentData = {
           razorpay_payment_id: response.razorpay_payment_id,
           razorpay_order_id: response.razorpay_order_id,
           razorpay_signature: response.razorpay_signature,
           totalAmount: totalPrice,
           storageSize: storageSize,
         };
-        captureOrder.mutate(data);
+        captureOrder.mutate(paymentData);
       },
       prefill: {
         name: data?.user?.email?.split("@")[0],
@@ -223,9 +222,6 @@ export default function StoragePurchasePage() {
               <Button
                 className="w-full bg-blue-600 py-6 text-lg font-semibold hover:bg-blue-700"
                 onClick={() => {
-                  order.mutate({
-                    amount: Number(totalPrice),
-                  });
                   handlePayment();
                 }}
               >
